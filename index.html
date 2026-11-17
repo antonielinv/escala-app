@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escala de Grandes Eventos</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Escala">
+<meta name="theme-color" content="#102a4c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Identidade: documento operacional. Marinho institucional, papel branco, cores só para situação. */
+  :root{
+    --navy:#102a4c; --navy2:#1c3d68; --ink:#16202c; --muted:#5b6775; --ground:#e9ecef; --paper:#fff; --rule:#d3d9e0;
+    --ok:#1e6b3e; --okbg:#e6f2ea; --warn:#9a5b00; --warnbg:#fff6e5; --bad:#a4231b; --badbg:#fbeceb;
+    --cond:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Barlow,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--ground);color:var(--ink);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  svg.i{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+  :focus-visible{outline:3px solid #6f9bd1;outline-offset:2px}
+
+  header{background:var(--navy);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;border-bottom:3px solid #c9a227}
+  header .t{flex:1;min-width:0}
+  header .t b{display:block;font-family:var(--cond);font-size:19px;font-weight:600;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header .t span{font-size:13px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  header button{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:4px;padding:6px 10px;font:500 14px Barlow,sans-serif;cursor:pointer}
+  #btnSino{position:relative;padding:6px 8px;line-height:0}
+  #sinoN{position:absolute;top:-7px;right:-7px;background:var(--bad);color:#fff;border-radius:3px;font:700 11px/18px Barlow,sans-serif;min-width:18px;height:18px;padding:0 4px;text-align:center;display:none}
+
+  main{max-width:720px;margin:0 auto;padding:14px 14px 28px}
+  .pn{background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:14px 16px;margin-bottom:12px}
+  h2{margin:0 0 10px;font-size:16px;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  .peq{font-size:14px}
+  label{font-size:14px;font-weight:600;display:block;margin:12px 0 5px;color:var(--navy)}
+  input{width:100%;padding:11px 12px;border:1px solid #b9c2cd;border-radius:4px;font:500 17px Barlow,sans-serif;background:#fff;color:var(--ink)}
+  input:focus{border-color:var(--navy2);outline:2px solid #c9d8ec}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:4px;padding:11px 16px;font:600 16px Barlow,sans-serif;cursor:pointer;text-decoration:none;background:var(--navy2);color:#fff}
+  .btn:disabled{opacity:.55;cursor:wait}
+  .btn.full{width:100%;margin-top:14px}
+  .btn.sec{background:#fff;color:var(--navy);border-color:#b9c2cd}
+  .btn.ok{background:var(--ok)} .btn.bad{background:var(--bad)} .btn.warn{background:var(--warn)}
+  .btn.sm{padding:7px 12px;font-size:14px}
+  .btn.quieto{background:transparent;color:var(--muted);border-color:transparent;font-weight:500}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btns .btn{flex:1 1 auto}
+
+  .st{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;white-space:nowrap}
+  .st:before{content:"";width:8px;height:8px;border-radius:1px;background:currentColor}
+  .st.ok{color:var(--ok)} .st.warn{color:var(--warn)} .st.bad{color:var(--bad)} .st.n{color:var(--muted)}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 6px;border-radius:3px;background:var(--bad);color:#fff;vertical-align:1px}
+
+  .msg{padding:10px 12px;border-radius:4px;margin-top:12px;font-size:15px;white-space:pre-line;border-left:4px solid}
+  .msg.ok{background:var(--okbg);color:var(--ok)} .msg.bad{background:var(--badbg);color:var(--bad)} .msg.warn{background:var(--warnbg);color:var(--warn)}
+  .msg svg.i{margin-right:6px}
+
+  .linha{font-size:13px;color:var(--muted);margin:0 2px 10px;display:flex;align-items:center;gap:6px}
+  .linha.off{background:var(--warnbg);color:var(--warn);padding:8px 10px;border-radius:4px;border-left:4px solid}
+
+  .alerta{background:var(--paper);border:1px solid #e3b4b0;border-top:4px solid var(--bad);border-radius:4px;padding:14px 16px;margin-bottom:12px}
+  .alerta h2{color:var(--bad)}
+  .alerta ul{margin:4px 0 0;padding-left:18px} .alerta li{margin:5px 0}
+  .de{text-decoration:line-through;color:var(--muted)} .para{font-weight:700}
+
+  /* Bloco de apresentação: o elemento principal da tela */
+  .apr{background:var(--navy);color:#fff;border-radius:4px;margin-bottom:12px;overflow:hidden}
+  .apr .topo{padding:14px 16px 0;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .apr .eq{font-family:var(--cond);font-size:20px;font-weight:600;line-height:1.15}
+  .apr .fn{font-size:13px;opacity:.75;white-space:nowrap}
+  .apr .quando{display:flex;align-items:flex-end;gap:14px;padding:6px 16px 12px}
+  .apr .hr{font-family:var(--cond);font-size:58px;font-weight:700;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .apr .dt{font-size:15px;line-height:1.3;padding-bottom:4px}
+  .apr .dt b{display:block;font-weight:600}
+  .apr .dt span{opacity:.8}
+  .cr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:#0b1f3a;border-top:1px solid rgba(255,255,255,.12);font-size:14px}
+  .cr .v{font-family:var(--cond);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .cr.amar{background:#8a5200} .cr.verm{background:var(--bad)} .cr.fim{background:#3c4a5c}
+  .cr.ok{background:var(--ok)} .cr.falta{background:var(--bad)}
+  .cr .msgc{display:flex;align-items:center;gap:8px;font-weight:600}
+
+  .avisos{background:var(--warnbg);border:1px solid #efd7a8;border-left:5px solid #c27c0e;border-radius:4px;padding:14px 16px;margin-bottom:12px}
+  .avisos h2{color:#7a4700}
+  .avisos .item{padding:10px 0;border-top:1px solid #efd7a8}
+  .avisos .item:first-of-type{border-top:0;padding-top:2px}
+  .avisos .meta{font-size:13px;color:#7a5a2b}
+  .avisos .txt{margin-top:2px;color:#2b1d07}
+
+  .tabs{display:flex;margin-bottom:12px;border:1px solid var(--navy2);border-radius:4px;overflow:hidden;background:#fff}
+  .tabs button{flex:1;border:0;background:transparent;padding:9px 8px;font:600 15px Barlow,sans-serif;color:var(--navy2);cursor:pointer}
+  .tabs button.on{background:var(--navy2);color:#fff}
+
+  dl.ficha{margin:0;display:grid;grid-template-columns:190px 1fr}
+  dl.ficha dt,dl.ficha dd{margin:0;padding:9px 0;border-top:1px solid var(--rule)}
+  dl.ficha dt{font-weight:700;color:var(--navy);font-size:14px;padding-right:12px}
+  dl.ficha dd{color:#2b3440}
+  dl.ficha dt:first-of-type,dl.ficha dt:first-of-type + dd{border-top:0}
+  dl.ficha .mud{background:var(--warnbg);box-shadow:-8px 0 0 var(--warnbg),8px 0 0 var(--warnbg)}
+  @media(max-width:560px){dl.ficha{grid-template-columns:1fr} dl.ficha dd{border-top:0;padding-top:0}}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chips button{border:1px solid #b9c2cd;background:#fff;border-radius:3px;padding:5px 10px;font:500 14px Barlow,sans-serif;color:var(--ink);cursor:pointer}
+  .cont{font-size:13px;color:var(--muted);text-align:right;margin-top:4px}
+
+  .lista .it{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--rule);cursor:pointer}
+  .lista .it:first-child{border-top:0;padding-top:2px}
+  .lista .it b{font-weight:600}
+
+  .resumo{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--rule);border-radius:4px;margin-top:4px}
+  .resumo div{padding:8px 6px;text-align:center;border-left:1px solid var(--rule)}
+  .resumo div:first-child{border-left:0}
+  .resumo b{display:block;font-family:var(--cond);font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+  .resumo span{font-size:12px;color:var(--muted)}
+  .pol{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:11px 16px;margin:0 -16px;border-top:1px solid var(--rule)}
+  .pol.ok{background:#f2f8f4;box-shadow:inset 4px 0 0 var(--ok)} .pol.flt{background:#fcf3f2;box-shadow:inset 4px 0 0 var(--bad)}
+  .pol .pi{min-width:0;flex:1;font-size:15px}
+  .pol .pi .muted{font-size:13px;margin:1px 0 4px}
+  .pol .pa{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+  .bp{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:92px;border:1px solid var(--ok);border-radius:3px;padding:5px 8px;font:600 13px Barlow,sans-serif;cursor:pointer;background:var(--ok);color:#fff}
+  .bp.flt{background:#fff;color:var(--bad);border-color:var(--bad)}
+  .bp.des{background:transparent;border-color:transparent;color:var(--muted);text-decoration:underline;font-weight:500;min-width:0;padding:2px 0}
+  .bp svg.i{width:14px;height:14px}
+  .eqh{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:6px}
+  .eqh b{font-family:var(--cond);font-size:18px;font-weight:600;color:var(--navy)}
+
+  .foot{font-size:13px;color:var(--muted);margin:18px 2px}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:g .8s linear infinite;vertical-align:-2px}
+  @keyframes g{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
+</style>
+</head>
+<body>
+<header>
+  <div class="t"><b id="hTitle">Escala de Grandes Eventos</b><span id="hSub"></span></div>
+  <button id="btnSino" style="display:none" aria-label="Avisos"></button>
+  <button id="btnTopo" style="display:none"></button>
+</header>
+<main id="app"></main>
+
+<script>
+/* =========================================================================
+   App do policial – Escala de Grandes Eventos (piloto)
+   Fala com o servidor (Apps Script) e guarda as escalas neste celular.
+   ========================================================================= */
+var API_URL = 'https://script.google.com/macros/s/AKfycbxZHkLazVHqtsWfi8ci7cEeFP5pub1sxKdTPLLSFmyvNDHxgxQ1-hzZvk7QtkDR_xT5uw/exec';
+var CHAVE = 'escala_ge_v1';
+var MAX_ERROS = 5, BLOQ_MIN = 15;
+var FUNC = {CMT_OP:'Cmt da Operação', CMT_SETOR:'Cmt de Setor', CMT_EQUIPE:'Cmt de Equipe', MEMBRO:'Integrante de equipe'};
+
+/* ---------- ícones (traço simples) ---------- */
+var IC = {
+  sino:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  aviso:'<path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 9a3 3 0 0 1 0 6"/><path d="M19 6a7 7 0 0 1 0 12"/>',
+  alerta:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  ok:'<path d="M20 6 9 17l-5-5"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  sair:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  atual:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  relogio:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  mais:'<path d="M12 5v14"/><path d="M5 12h14"/>'
+};
+function ic(n){ return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'; }
+
+/* ---------- memória do celular ---------- */
+function ler(){ try{ return JSON.parse(localStorage.getItem(CHAVE)) || null; }catch(e){ return null; } }
+var M = ler() || {sess:[], erros:[], bloqueio:0};
+function salvar(){ try{ localStorage.setItem(CHAVE, JSON.stringify(M)); }catch(e){} }
+
+/* ---------- comunicação com o servidor (com repetição automática) ---------- */
+function chamar(q){
+  return new Promise(function(ok){
+    if (window.google && google.script && google.script.run){
+      google.script.run.withSuccessHandler(function(r){ ok(r || {ok:false, erro:'FALHA_SERVIDOR'}); })
+        .withFailureHandler(function(){ ok({ok:false, erro:'SEM_CONEXAO'}); }).api(q);
+    } else {
+      var ctl = window.AbortController ? new AbortController() : null, t = setTimeout(function(){ if (ctl) ctl.abort(); }, 30000);
+      fetch(API_URL, {method:'POST', body:JSON.stringify(q), headers:{'Content-Type':'text/plain;charset=utf-8'}, redirect:'follow', signal: ctl ? ctl.signal : undefined})
+        .then(function(r){ return r.json(); }).then(function(r){ clearTimeout(t); ok(r); })
+        .catch(function(){ clearTimeout(t); ok({ok:false, erro:'SEM_CONEXAO'}); });
+    }
+  });
+}
+function api(q, tentativas){
+  tentativas = tentativas || 4;
+  return chamar(q).then(function(r){
+    var repetir = !r.ok && (r.erro === 'FALHA_SERVIDOR' || r.erro === 'SEM_CONEXAO');
+    if (repetir && tentativas > 1){
+      return new Promise(function(z){ setTimeout(z, 1200 + Math.random()*2500); }).then(function(){ return api(q, tentativas-1); });
+    }
+    return r;
+  });
+}
+
+/* ---------- utilidades ---------- */
+function $(s){ return document.querySelector(s); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function dig(s){ return String(s || '').toUpperCase().replace(/[^0-9X]/g, ''); }   // matrícula: números e X
+function hora(ts){ return new Date(ts).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}).replace(',', ' às'); }
+function hm(ts){ return new Date(ts).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}); }
+function fone(t){ if(!t) return ''; var d=t.slice(-11); return d.length===11 ? '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7) : t; }
+function sessao(ev, mat){ for (var i=0;i<M.sess.length;i++) if (M.sess[i].ev===ev && M.sess[i].mat===mat) return M.sess[i]; return null; }
+function tirar(s){ M.sess = M.sess.filter(function(x){ return x !== s; }); salvar(); }
+function dataPorExtenso(txt){
+  var md = String(txt || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (!md) return esc(txt || '');
+  var t = new Date(+md[3], +md[2]-1, +md[1]).toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+function campo(d, nome){ var k = (d.ficha || []).filter(function(x){ return x[0] === nome; })[0]; return k ? k[1] : ''; }
+var atual = null, aba = 'ficha', avisosApp = [], ocupado = false, naoVaiAberto = false, tropaCache = null;
+
+function topo(t, sub, botao, acao){
+  $('#hTitle').textContent = t || 'Escala de Grandes Eventos';
+  $('#hSub').textContent = sub || 'Consulta por matrícula e código do evento';
+  $('#btnSino').style.display = 'none';
+  var b = $('#btnTopo');
+  if (botao){ b.style.display=''; b.textContent=botao; b.onclick=acao; } else b.style.display='none';
+}
+function inicio(){ if (M.sess.length) telaMinhas(); else telaEntrar(); }
+function avisosDoApp(){ var h = avisosApp.map(function(a){ return '<div class="msg warn" style="margin:0 0 12px">'+esc(a)+'</div>'; }).join(''); avisosApp = []; return h; }
+
+/* ============ ENTRAR ============ */
+function telaEntrar(msg){
+  atual = null; topo(null, null, M.sess.length ? 'Minhas escalas' : null, telaMinhas);
+  var bloq = M.bloqueio > Date.now();
+  $('#app').innerHTML = avisosDoApp() +
+    '<div class="pn"><h2>Consulte sua escala</h2>' +
+    '<div class="muted peq">Use sua matrícula e o código do evento divulgado no boletim ou no briefing.</div>' +
+    '<form id="fE" autocomplete="off">' +
+      '<label for="iM">Matrícula</label><input id="iM" inputmode="text" autocapitalize="characters" required '+(bloq?'disabled':'')+'>' +
+      '<label for="iC">Código do evento</label><input id="iC" style="text-transform:uppercase" autocapitalize="characters" required '+(bloq?'disabled':'')+'>' +
+      '<button class="btn full" id="bE" type="submit" '+(bloq?'disabled':'')+'>Acessar minha escala</button>' +
+      (bloq ? '<div class="msg bad">Acesso bloqueado após várias tentativas erradas. Tente novamente às '+new Date(M.bloqueio).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.</div>'
+            : (msg ? '<div class="msg '+msg[0]+'">'+esc(msg[1])+'</div>' : '')) +
+    '</form></div>' +
+    '<div class="foot">Depois do primeiro acesso, sua escala fica salva neste celular.</div>';
+  $('#fE').onsubmit = function(ev){
+    ev.preventDefault(); if (ocupado) return;
+    var mat = dig($('#iM').value), cod = $('#iC').value.trim().toUpperCase();
+    if (!mat || !cod) return;
+    ocupado = true; var b = $('#bE'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Consultando';
+    api({acao:'entrar', mat:mat, cod:cod}).then(function(r){
+      ocupado = false;
+      if (r.ok){
+        M.erros = [];
+        var s = sessao(r.ev.id, mat);
+        if (!s){ s = {ev:r.ev.id, mat:mat}; M.sess.push(s); }
+        s.tk = r.tk; s.dados = r; s.em = Date.now(); salvar();
+        atual = s; aba = 'ficha'; tropaCache = null; return telaEscala();
+      }
+      if (r.erro === 'SEM_CONEXAO' || r.erro === 'FALHA_SERVIDOR')
+        return telaEntrar(['warn','Sem resposta do servidor. Verifique a internet e tente de novo em instantes.']);
+      if (r.erro === 'BLOQUEADO'){ M.bloqueio = Date.now() + BLOQ_MIN*60000; salvar(); return telaEntrar(); }
+      var agora = Date.now();
+      M.erros = M.erros.filter(function(t){ return agora - t < BLOQ_MIN*60000; }); M.erros.push(agora);
+      if (M.erros.length >= MAX_ERROS){ M.bloqueio = agora + BLOQ_MIN*60000; M.erros = []; salvar(); return telaEntrar(); }
+      salvar();
+      telaEntrar(['bad','Matrícula ou código não conferem. Restam '+(MAX_ERROS - M.erros.length)+' tentativa(s).\nSe você foi escalado e não consegue acessar, procure seu Comando.']);
+    });
+  };
+}
+
+/* ============ MINHAS ESCALAS ============ */
+function pendAlt(d){ var c = (d.estado && d.estado.ciencia) || 0; return (d.alteracoes || []).filter(function(a){ return a.ts > c; }); }
+function avNovos(d){ var l = (d.estado && d.estado.leitura) || 0; return (d.avisos || []).filter(function(a){ return a.ts > l; }); }
+function telaMinhas(){
+  atual = null;
+  if (!M.sess.length) return telaEntrar();
+  if (M.sess.length === 1 && !avisosApp.length){ atual = M.sess[0]; return telaEscala(); }
+  topo('Minhas escalas', 'Escalas salvas neste celular');
+  $('#app').innerHTML = avisosDoApp() +
+    '<div class="pn lista">' + M.sess.map(function(s, i){
+      var d = s.dados || {}, p = d.eu || {}, eq = d.equipe || {}, pa = pendAlt(d).length, nv = avNovos(d).length;
+      var st = pa ? '<span class="st bad">Escala alterada</span>' : nv ? '<span class="st warn">'+nv+' aviso(s) novo(s)</span>' : '<span class="st n">Em dia</span>';
+      return '<div class="it" role="button" tabindex="0" data-i="'+i+'"><div><b>'+esc(d.ev ? d.ev.nome : 'Evento')+'</b>' +
+        '<div class="muted peq">'+esc(d.ev ? d.ev.data : '')+', '+esc(p.n || s.mat)+'</div>' +
+        '<div class="peq">'+esc(eq.n || '')+', apresentação às <b>'+esc(eq.h || '—')+'</b></div></div><div>'+st+'</div></div>';
+    }).join('') + '</div>' +
+    '<button class="btn sec full" id="bAdd">'+ic('mais')+'Acessar outro evento</button>' +
+    '<button class="btn quieto full" id="bSair">'+ic('sair')+'Sair do aplicativo</button>' +
+    '<div class="foot">Eventos encerrados saem do app automaticamente.</div>';
+  document.querySelectorAll('[data-i]').forEach(function(c){ c.onclick = function(){ atual = M.sess[+c.dataset.i]; aba='ficha'; tropaCache=null; telaEscala(); }; });
+  $('#bAdd').onclick = function(){ telaEntrar(); };
+  $('#bSair').onclick = sair;
+}
+
+/* ============ ESCALA ============ */
+function atualizar(silencioso){
+  var s = atual; if (!s) return Promise.resolve();
+  if (!silencioso) desenharFaixa('carregando');
+  return api({acao:'escala', ev:s.ev, mat:s.mat, tk:s.tk}).then(function(r){
+    if (atual !== s) return;
+    if (r.ok){ s.dados = r; s.em = Date.now(); salvar(); return telaEscala(true); }
+    if (r.erro === 'ENCERRADO'){ avisosApp.push('O evento “'+(r.nome || (s.dados && s.dados.ev.nome) || '')+'” foi encerrado e saiu do seu app.'); tirar(s); return telaMinhas(); }
+    if (r.erro === 'RETIRADO'){ avisosApp.push('Matrícula '+s.mat+': você foi retirado da escala do evento “'+(s.dados ? s.dados.ev.nome : '')+'”'+(r.quando?' em '+hora(r.quando):'')+'. Em caso de dúvida, procure seu Comando.'); tirar(s); return telaMinhas(); }
+    if (r.erro === 'SESSAO_INVALIDA'){ avisosApp.push('Acesse de novo com sua matrícula e o código do evento.'); tirar(s); return telaEntrar(); }
+    desenharFaixa('offline');
+  });
+}
+function desenharFaixa(estado){
+  var f = $('#faixa'); if (!f || !atual) return;
+  if (estado === 'carregando'){ f.className='linha'; f.innerHTML='<span class="spin"></span> Atualizando'; }
+  else if (estado === 'offline'){ f.className='linha off'; f.textContent='Sem conexão. Mostrando a escala salva em '+hora(atual.em)+'.'; }
+  else { f.className='linha'; f.innerHTML=ic('atual')+'Atualizado em '+hora(atual.em); }
+}
+function erroFaixa(t){ var f=$('#faixa'); if (f){ f.className='linha off'; f.textContent=t; } }
+function registrar(tipo, extra){
+  var s = atual, q = {acao:'registrar', ev:s.ev, mat:s.mat, tk:s.tk, tipo:tipo};
+  for (var k in (extra||{})) q[k] = extra[k];
+  ocupado = true; telaEscala(true);
+  return api(q).then(function(r){
+    ocupado = false;
+    if (r.ok){ s.dados.estado = r.estado; salvar(); telaEscala(true); }
+    else { telaEscala(true); erroFaixa('Não foi possível enviar agora. Tente de novo.'); }
+  });
+}
+function telaEscala(jaAtualizado){
+  var s = atual; if (!s || !s.dados) return telaEntrar();
+  var d = s.dados, p = d.eu, eq = d.equipe;
+  topo(d.ev.nome, p.n+', '+p.o, M.sess.length > 1 ? 'Minhas escalas' : 'Outro evento', function(){ M.sess.length > 1 ? telaMinhas() : telaEntrar(); });
+  var pend = pendAlt(d), mud = {};
+  pend.forEach(function(a){ (a.campos||[]).forEach(function(c){ mud[c.campo]=1; }); });
+  var alerta = pend.length ? '<div class="alerta" role="alert"><h2>'+ic('alerta')+'Sua escala foi alterada</h2><ul>' +
+      pend.map(function(a){ return a.tipo==='INCLUSAO' ? '<li>'+hora(a.ts)+': você foi incluído nesta escala.</li>'
+        : a.campos.map(function(c){ return '<li>'+hora(a.ts)+': '+esc(c.campo)+' passou de <span class="de">'+esc(c.de)+'</span> para <span class="para">'+esc(c.para)+'</span></li>'; }).join(''); }).join('') +
+      '</ul><button class="btn bad full" id="bCiente" '+(ocupado?'disabled':'')+'>Estou ciente da alteração</button></div>' : '';
+  var lidos = d.estado.leitura || 0, novos = avNovos(d);
+  var avisos = d.avisos.length ? '<div class="avisos" id="avisos"><h2>'+ic('aviso')+'Avisos do evento'+(novos.length?' <span class="tag">'+novos.length+' novo'+(novos.length>1?'s':'')+'</span>':'')+'</h2>' +
+      d.avisos.map(function(a){ var n=a.ts>lidos; return '<div class="item"><div class="meta">'+(a.para === 'Todo o efetivo' ? 'Para todo o efetivo' : 'Para '+esc(a.para))+', '+hora(a.ts)+(n?' <span class="tag">novo</span>':'')+'</div><div class="txt" style="font-weight:'+(n?600:400)+'">'+esc(a.texto)+'</div></div>'; }).join('') +
+      (novos.length?'<button class="btn full" style="background:#7a4700" id="bLi" '+(ocupado?'disabled':'')+'>Li os avisos</button>':'') + '</div>' : '';
+  var c = d.estado.conf;
+  var conf = '<div class="pn"><h2>Comparecimento</h2>' + (naoVaiAberto ?
+      '<label for="tMot" style="margin-top:0">Motivo da ausência</label><input id="tMot" maxlength="15" placeholder="Ex.: licença médica" autocomplete="off">' +
+      '<div class="cont" id="cMot">0/15</div>' +
+      '<div class="chips">'+(d.motivos||[]).map(function(m){ return '<button type="button" data-mot="'+esc(m)+'">'+esc(m)+'</button>'; }).join('')+'</div>' +
+      '<div class="btns"><button class="btn bad" id="bEnvNV">Informar ausência</button><button class="btn sec" id="bCancNV">Cancelar</button></div>'
+    : c ? (c.s==='CONFIRMADO' ? '<div class="msg ok" style="margin-top:0">'+ic('ok')+'Comparecimento confirmado em '+hora(c.ts)+'.</div>'
+          : '<div class="msg bad" style="margin-top:0">'+ic('x')+'Ausência informada em '+hora(c.ts)+': '+esc(c.m)+(c.o?', '+esc(c.o):'')+'.\nSeu Cmt e o planejamento já foram avisados.</div>')
+        + '<div class="btns"><button class="btn sec sm" style="flex:0 0 auto" id="bMudar" '+(ocupado?'disabled':'')+'>Alterar resposta</button></div>'
+    : '<div class="muted peq">Confirme se vai comparecer. Se não puder, avise agora para dar tempo de providenciar substituto.</div>' +
+      '<div class="btns"><button class="btn ok" id="bConf" '+(ocupado?'disabled':'')+'>'+ic('ok')+'Confirmo comparecimento</button><button class="btn sec" id="bNV">Não poderei comparecer</button></div>') + '</div>';
+  var local = campo(d, 'Local de apresentação');
+  var apr = '<section class="apr" aria-label="Apresentação"><div class="topo"><span class="eq">'+esc(eq.n)+'</span><span class="fn">'+esc(FUNC[p.f]||p.f)+'</span></div>' +
+    '<div class="quando"><span class="hr">'+esc(eq.h || '--:--')+'</span><span class="dt"><b>'+dataPorExtenso(d.ev.data)+'</b><span>'+esc(local && local !== '—' ? local : '')+'</span></span></div>' +
+    '<div class="cr" id="crono"></div></section>';
+  var ficha = apr + conf +
+    '<div class="pn"><h2>Minha escala</h2><dl class="ficha">' +
+      d.ficha.map(function(kv){ var m = mud[kv[0]] ? ' class="mud"' : ''; return '<dt'+m+'>'+esc(kv[0])+'</dt><dd'+m+'>'+esc(kv[1])+'</dd>'; }).join('') +
+    '</dl><div class="btns">' +
+      (d.mapa ? '<a class="btn sm" href="'+esc(d.mapa)+'" target="_blank" rel="noopener">'+ic('pin')+'Como chegar à apresentação</a>' : '') +
+      (d.mapaE ? '<a class="btn sm sec" href="'+esc(d.mapaE)+'" target="_blank" rel="noopener">'+ic('pin')+'Como chegar ao local de emprego</a>' : '') +
+    '</div></div>';
+  var abas = d.cmt ? '<div class="tabs" role="tablist"><button role="tab" data-t="ficha" class="'+(aba==='ficha'?'on':'')+'">Minha escala</button><button role="tab" data-t="tropa" class="'+(aba==='tropa'?'on':'')+'">Minha tropa</button></div>' : '';
+  $('#app').innerHTML = '<div class="linha" id="faixa"></div>' + alerta + avisos + abas +
+    (d.cmt && aba==='tropa' ? '<div id="tropa">'+(tropaCache ? htmlTropa(tropaCache) : '<div class="pn muted"><span class="spin"></span> Carregando sua tropa</div>')+'</div>' : ficha) +
+    '<button class="btn quieto full" id="bSair">'+ic('sair')+'Sair do aplicativo</button>' +
+    '<div class="foot">Mantenha o app na tela inicial do celular. Ao abrir, ele mostra qualquer mudança na sua escala.</div>';
+  desenharFaixa(jaAtualizado ? 'ok' : 'carregando');
+  sino(novos.length);
+  cronometro();
+  if (d.cmt && aba === 'tropa' && tropaCache) ligarPresenca();
+  function on(id, fn){ var el=$(id); if (el) el.onclick=fn; }
+  on('#bCiente', function(){ registrar('CIENCIA'); });
+  on('#bLi', function(){ registrar('LEITURA'); });
+  on('#bConf', function(){ registrar('CONFIRMADO'); });
+  on('#bNV', function(){ naoVaiAberto = true; telaEscala(true); });
+  on('#bCancNV', function(){ naoVaiAberto = false; telaEscala(true); });
+  var tMot = $('#tMot');
+  if (tMot){
+    var conta = function(){ $('#cMot').textContent = tMot.value.length+'/15'; };
+    tMot.oninput = conta; tMot.focus();
+    document.querySelectorAll('[data-mot]').forEach(function(b){ b.onclick = function(){ tMot.value = b.dataset.mot.slice(0,15); conta(); tMot.focus(); }; });
+  }
+  on('#bEnvNV', function(){
+    var mot = tMot.value.replace(/\s+/g,' ').trim();
+    if (mot.length < 2){ $('#cMot').innerHTML = '<span style="color:var(--bad)">Escreva o motivo (até 15 caracteres)</span>'; tMot.focus(); return; }
+    naoVaiAberto=false; registrar('NAO_VAI', {motivo:mot});
+  });
+  on('#bMudar', function(){ registrar('DESFAZER'); });
+  document.querySelectorAll('.tabs button').forEach(function(b){ b.onclick = function(){ aba = b.dataset.t; telaEscala(true); if (aba==='tropa') carregarTropa(); }; });
+  on('#bSair', sair);
+  if (!jaAtualizado){ if (Date.now() - (s.em || 0) > 2*60000) atualizar(true); else desenharFaixa('ok'); }   // evita consulta repetida se acabou de atualizar
+}
+
+/* ============ SINO DE AVISOS ============ */
+function sino(n){
+  var b = $('#btnSino');
+  b.style.display = '';
+  b.innerHTML = ic('sino') + '<span id="sinoN"></span>';
+  var c = $('#sinoN');
+  c.textContent = n > 9 ? '9+' : String(n);
+  c.style.display = n ? 'inline-block' : 'none';
+  b.setAttribute('aria-label', n ? n+' aviso(s) novo(s)' : 'Avisos');
+  b.onclick = function(){
+    if (aba !== 'ficha' && atual && atual.dados.cmt){ aba = 'ficha'; telaEscala(true); }
+    var el = $('#avisos');
+    if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    else { var f = $('#faixa'); if (f){ f.className='linha'; f.textContent='Nenhum aviso publicado para você neste evento.'; } }
+  };
+}
+
+/* ============ CONTAGEM ATÉ A APRESENTAÇÃO ============ */
+function horaApresentacao(d){
+  var md = String(d.ev.data || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  var mh = String((d.equipe && d.equipe.h) || '').match(/(\d{1,2})\s*[:hH]\s*(\d{2})?/);
+  if (!md || !mh) return null;
+  return new Date(+md[3], +md[2]-1, +md[1], +mh[1], +(mh[2]||0), 0).getTime();
+}
+function dois(n){ return (n<10?'0':'')+n; }
+var cronoTimer = null;
+function cronometro(){
+  if (cronoTimer){ clearInterval(cronoTimer); cronoTimer = null; }
+  var el = $('#crono'); if (!el || !atual || !atual.dados) return;
+  var alvo = horaApresentacao(atual.dados);
+  if (!alvo){ el.style.display = 'none'; return; }
+  function tic(){
+    var el = $('#crono'); if (!el){ clearInterval(cronoTimer); cronoTimer = null; return; }
+    var falta = alvo - Date.now(), pr = atual.dados.estado && atual.dados.estado.pres;
+    if (pr){
+      el.className = 'cr ' + (pr.f ? 'falta' : 'ok');
+      el.innerHTML = '<span class="msgc">'+ic(pr.f ? 'x' : 'ok')+(pr.f ? 'Falta registrada' : 'Apresentação registrada')+'</span><span>'+hm(pr.ts)+', por '+esc(String(pr.por||'seu Cmt').replace(/\s*\(.*\)$/, ''))+'</span>';
+      clearInterval(cronoTimer); cronoTimer = null; return;
+    }
+    if (falta <= 0){
+      el.className = 'cr fim';
+      el.innerHTML = '<span class="msgc">'+ic('relogio')+'Horário de apresentação atingido</span>';
+      clearInterval(cronoTimer); cronoTimer = null; return;
+    }
+    var s = Math.floor(falta/1000), dd = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60), sg = s%60;
+    var urg = falta < 30*60000 ? 'verm' : falta < 2*3600000 ? 'amar' : '';
+    el.className = 'cr ' + urg;
+    el.innerHTML = '<span>'+(urg === 'verm' ? 'Dirija-se ao local. Faltam' : 'Faltam')+'</span><span class="v">'+(dd ? dd+(dd>1?' dias ':' dia ') : '')+dois(h)+':'+dois(m)+':'+dois(sg)+'</span>';
+  }
+  tic(); cronoTimer = setInterval(tic, 1000);
+}
+
+/* ============ MINHA TROPA (Cmts) ============ */
+function carregarTropa(){
+  var s = atual;
+  api({acao:'tropa', ev:s.ev, mat:s.mat, tk:s.tk}).then(function(r){
+    if (atual !== s || aba !== 'tropa') return;
+    var el = $('#tropa'); if (!el) return;
+    if (!r.ok){ el.innerHTML = '<div class="msg warn">Não foi possível carregar a tropa agora. Tente de novo em instantes.</div>'; return; }
+    tropaCache = r; el.innerHTML = htmlTropa(r); ligarPresenca();
+  });
+}
+function situacao(x){
+  if (x.conf && x.conf.s === 'NAO_VAI') return ['bad','Não vai: '+x.conf.m];
+  if (x.conf && x.conf.s === 'CONFIRMADO') return ['ok','Confirmou'];
+  if (x.acessou) return ['n','Acessou, não confirmou'];
+  return ['warn','Não acessou'];
+}
+function inicioEquipe(r, e){
+  var md = String(r.data || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/), mh = String((r.eqs[e] || {}).h || '').match(/(\d{1,2})\s*[:hH]\s*(\d{2})?/);
+  return md && mh ? new Date(+md[3], +md[2]-1, +md[1], +mh[1], +(mh[2]||0)).getTime() : 0;
+}
+function htmlTropa(r){
+  var l = r.lista, ac=0, cf=0, nv=0, na=0, sc=0, pr=0, ft=0, por = {};
+  l.forEach(function(x){ if (x.acessou) ac++; else na++; if (x.conf && x.conf.s==='CONFIRMADO') cf++; if (x.conf && x.conf.s==='NAO_VAI') nv++; if (x.semCiencia) sc++; if (x.pres && !x.pres.f) pr++; if (x.pres && x.pres.f) ft++; (por[x.e] = por[x.e] || []).push(x); });
+  var alertas = [];
+  if (na) alertas.push('<span class="st warn">'+na+' não acessaram</span>');
+  if (nv) alertas.push('<span class="st bad">'+nv+' não poderão ir</span>');
+  if (sc) alertas.push('<span class="st warn">'+sc+' sem ciência de alteração</span>');
+  return '<div class="pn"><div class="eqh"><b>'+l.length+' policiais sob seu comando</b><button class="btn sec sm" style="flex:0 0 auto" onclick="tropaCache=null;telaEscala(true);carregarTropa()">'+ic('atual')+'Atualizar</button></div>' +
+      '<div class="resumo"><div><b style="color:var(--ok)">'+pr+'</b><span>presentes</span></div><div><b style="color:var(--bad)">'+ft+'</b><span>faltas</span></div><div><b>'+cf+'</b><span>confirmaram</span></div><div><b>'+ac+'</b><span>acessaram</span></div></div>' +
+      (alertas.length ? '<div class="btns" style="gap:14px">'+alertas.join('')+'</div>' : '') +
+      '<div class="muted peq" style="margin-top:10px">Na apresentação, marque Presente ou Falta para cada policial. Quem não for marcado até o horário aparece como sem registro.</div></div>' +
+    Object.keys(por).map(function(e){ var E = r.eqs[e] || {n:e, h:''}, ps = por[e], ini = inicioEquipe(r, e), passou = ini && Date.now() > ini;
+      var pe = ps.filter(function(x){ return x.pres && !x.pres.f; }).length, fe = ps.filter(function(x){ return x.pres && x.pres.f; }).length;
+      return '<div class="pn"><div class="eqh"><b>'+esc(E.n)+'</b><span class="muted peq">'+esc(E.h||'—')+'</span></div>' +
+        '<div class="muted peq" style="margin-bottom:8px">'+pe+' de '+ps.length+' presentes'+(fe?', '+fe+' falta(s)':'')+'</div>' +
+        ps.map(function(x){ var s = situacao(x);
+          var ap = x.pres ? '<span class="st '+(x.pres.f?'bad':'ok')+'">'+(x.pres.f?'Falta':'Presente')+' '+hm(x.pres.ts)+'</span><button class="bp des" data-pres="'+x.m+'" data-v="0">desfazer</button>'
+                 : (passou ? '<span class="st warn">Sem registro</span>' : '') + '<button class="bp flt" data-pres="'+x.m+'" data-v="F">'+ic('x')+'Falta</button><button class="bp" data-pres="'+x.m+'" data-v="1">'+ic('ok')+'Presente</button>';
+          return '<div class="pol'+(x.pres?(x.pres.f?' flt':' ok'):'')+'"><div class="pi"><b>'+esc(x.n)+'</b><div class="muted">Mat. '+x.m+', '+esc(x.o)+(x.v?', '+esc(x.v):'')+(x.f!=='MEMBRO'?', '+esc(FUNC[x.f]):'')+(x.tel?'<br><a href="tel:'+x.tel+'">'+fone(x.tel)+'</a>':'')+'</div>' +
+            '<span class="st '+s[0]+'">'+esc(s[1])+'</span>'+(x.semCiencia?' <span class="st warn">sem ciência</span>':'')+'</div><div class="pa">'+ap+'</div></div>'; }).join('') +
+        '</div>'; }).join('');
+}
+function ligarPresenca(){
+  document.querySelectorAll('[data-pres]').forEach(function(b){
+    b.onclick = function(){
+      var s = atual, alvo = b.dataset.pres, v = b.dataset.v === '1', fl = b.dataset.v === 'F';
+      b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+      api({acao:'presenca', ev:s.ev, mat:s.mat, tk:s.tk, alvo:alvo, presente:v, falta:fl}).then(function(r){
+        if (atual !== s || !tropaCache) return;
+        if (r.ok) tropaCache.lista.forEach(function(x){ if (x.m === alvo) x.pres = r.pres; });
+        var el = $('#tropa'); if (el){ el.innerHTML = htmlTropa(tropaCache); ligarPresenca(); }
+        if (!r.ok) erroFaixa('Não foi possível registrar agora. Tente de novo.');
+      });
+    };
+  });
+}
+
+/* ============ SAIR ============ */
+var saiu = false;
+function sair(){
+  saiu = true; atual = null;
+  if (cronoTimer){ clearInterval(cronoTimer); cronoTimer = null; }
+  topo('Escala de Grandes Eventos', 'Sessão encerrada neste celular');
+  $('#app').innerHTML = '<div class="pn"><h2>'+ic('sair')+'Você saiu do aplicativo</h2>' +
+    '<div class="muted">O app parou de consultar o servidor. Sua escala continua salva neste celular e você já pode fechar esta aba.</div>' +
+    '<button class="btn full" id="bVoltar">Abrir novamente</button></div>';
+  $('#bVoltar').onclick = function(){ saiu = false; inicio(); };
+  try { window.close(); } catch(e){}
+}
+
+/* ============ ATUALIZAÇÃO AUTOMÁTICA ============ */
+document.addEventListener('visibilitychange', function(){ if (!saiu && !document.hidden && atual && !ocupado && Date.now() - (atual.em || 0) > 2*60000) atualizar(true); });
+setInterval(function(){ if (!saiu && !document.hidden && atual && !ocupado && !naoVaiAberto) atualizar(true); }, 5*60000);
+inicio();
+if ('serviceWorker' in navigator) window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+</script>
+</body>
+</html>
