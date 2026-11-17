@@ -508,14 +508,14 @@ function htmlTropa(r){
       '<input id="iBusca" class="busca" placeholder="Buscar por nome ou matrícula" value="'+esc(buscaTropa)+'" autocomplete="off"></div>' +
     Object.keys(por).map(function(e){ var E = r.eqs[e] || {n:e, h:''}, ps = por[e].slice().sort(function(a,b){ return ordemPol(a)-ordemPol(b) || String(a.n).localeCompare(String(b.n)); }), ini = inicioEquipe(r, e), passou = ini && Date.now() > ini;
       var pe = ps.filter(function(x){ return x.pres && !x.pres.f; }).length, fe = ps.filter(function(x){ return x.pres && x.pres.f; }).length, rest = ps.filter(function(x){ return !x.pres; });
-      var saidas = ultimosRmj(r).filter(function(m){ return m.de === e && m.para !== e; });
+      var saidas = ultimosRmj(r).filter(function(m){ return m.de === e && m.para !== e && m.mot !== 'Desfeito'; });
       var lote = rest.length ? (confLote === e
           ? '<div class="btns"><button class="btn ok sm" data-lote="'+e+'" data-ok="1">Confirmar: marcar '+rest.length+' como presentes</button><button class="btn sec sm" data-lote="'+e+'" data-ok="0">Cancelar</button></div>'
           : '<div class="btns"><button class="btn sec sm" data-lote="'+e+'">'+ic('ok')+'Marcar os '+rest.length+' restantes como presentes</button></div>') : '';
       return '<div class="pn"><div class="eqh"><b>'+esc(E.n)+'</b><span class="muted peq">'+esc(E.h||'—')+'</span></div>' +
         '<div class="muted peq" style="margin-bottom:8px">'+pe+' de '+ps.length+' presentes'+(fe?', '+fe+' falta(s)':'')+(rest.length?', '+rest.length+' sem registro':'')+'</div>' +
         ps.map(function(x){ var s = situacao(x), vm = ultimoRmj(r, x.m), podeRem = (r.destinos||[]).length && x.f === 'MEMBRO';
-          var veio = vm && vm.para === x.e ? '<span class="st n">Veio da '+esc(nomeEq(r, vm.de))+' às '+hm(vm.ts)+'</span>' + (podeRem && Date.now() - vm.ts < 10*60000 && (r.destinos||[]).indexOf(vm.de) >= 0 ? ' <button class="bp des" data-desrmj="'+x.m+'">desfazer</button>' : '') + '<br>' : '';
+          var veio = vm && vm.para === x.e && vm.mot !== 'Desfeito' ? '<span class="st n" style="white-space:normal">Veio da '+esc(nomeEq(r, vm.de))+' às '+hm(vm.ts)+'</span>' + (podeRem && Date.now() - vm.ts < 10*60000 && (r.destinos||[]).indexOf(vm.de) >= 0 ? ' <button class="bp des" data-desrmj="'+x.m+'">desfazer</button>' : '') + '<br>' : '';
           var chk = selRem && podeRem ? '<label class="chk"><input type="checkbox" data-sel="'+x.m+'"'+(selRem[x.m]?' checked':'')+'></label>' : '';
           var ap = x.pres ? '<span class="st '+(x.pres.f?'bad':'ok')+'">'+(x.pres.f?'Falta':'Presente')+' '+hm(x.pres.ts)+(/QR\)$/.test(x.pres.por||'')?' (QR)':'')+'</span><button class="bp des" data-pres="'+x.m+'" data-v="0">desfazer</button>'
                  : (passou ? '<span class="st warn">Sem registro</span>' : '') + '<button class="bp flt" data-pres="'+x.m+'" data-v="F">'+ic('x')+'Falta</button><button class="bp" data-pres="'+x.m+'" data-v="1">'+ic('ok')+'Presente</button>';
