@@ -129,6 +129,15 @@
   .eqh{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:6px}
   .eqh b{font-family:var(--cond);font-size:18px;font-weight:600;color:var(--navy)}
 
+  .busca{margin-top:12px}
+  .linha.ok{background:var(--okbg);color:var(--ok);padding:8px 10px;border-radius:4px;border-left:4px solid;font-weight:600}
+  .qrtela{position:fixed;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;align-items:center;padding:16px;overflow:auto}
+  .qrcab{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--navy);padding-bottom:10px}
+  .qrcab b{font-family:var(--cond);font-size:22px;color:var(--navy)}
+  .qrcaixa{width:min(86vw,420px);aspect-ratio:1;margin:18px 0 10px;display:flex;align-items:center;justify-content:center}
+  .qrcaixa svg{width:100%;height:100%}
+  .qrtxt{max-width:420px;text-align:center;font-size:16px}
+  .qrinfo{max-width:420px;text-align:center;font-size:14px;color:var(--muted);margin-top:10px}
   .foot{font-size:13px;color:var(--muted);margin:18px 2px}
   .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:g .8s linear infinite;vertical-align:-2px}
   @keyframes g{to{transform:rotate(360deg)}}
@@ -164,7 +173,8 @@ var IC = {
   sair:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
   atual:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
   relogio:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  mais:'<path d="M12 5v14"/><path d="M5 12h14"/>'
+  mais:'<path d="M12 5v14"/><path d="M5 12h14"/>',
+  qr:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>'
 };
 function ic(n){ return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'; }
 
@@ -222,7 +232,11 @@ function topo(t, sub, botao, acao){
   var b = $('#btnTopo');
   if (botao){ b.style.display=''; b.textContent=botao; b.onclick=acao; } else b.style.display='none';
 }
-function inicio(){ if (M.sess.length) telaMinhas(); else telaEntrar(); }
+function inicio(){
+  if (fazerCheckin()) return;
+  if (qrPendente){ avisosApp.push('Entre com sua matrícula e o código do evento para registrar sua apresentação. Depois leia o QR do seu Cmt de novo, se for preciso.'); return telaEntrar(); }
+  if (M.sess.length) telaMinhas(); else telaEntrar();
+}
 function avisosDoApp(){ var h = avisosApp.map(function(a){ return '<div class="msg warn" style="margin:0 0 12px">'+esc(a)+'</div>'; }).join(''); avisosApp = []; return h; }
 
 /* ============ ENTRAR ============ */
@@ -252,7 +266,9 @@ function telaEntrar(msg){
         var s = sessao(r.ev.id, mat);
         if (!s){ s = {ev:r.ev.id, mat:mat}; M.sess.push(s); }
         s.tk = r.tk; s.dados = r; s.em = Date.now(); salvar();
-        atual = s; aba = 'ficha'; tropaCache = null; return telaEscala();
+        atual = s; aba = 'ficha'; tropaCache = null;
+        if (qrPendente && qrPendente.ev === r.ev.id && fazerCheckin()) return;
+        return telaEscala();
       }
       if (r.erro === 'SEM_CONEXAO' || r.erro === 'FALHA_SERVIDOR')
         return telaEntrar(['warn','Sem resposta do servidor. Verifique a internet e tente de novo em instantes.']);
@@ -460,6 +476,8 @@ function inicioEquipe(r, e){
   var md = String(r.data || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/), mh = String((r.eqs[e] || {}).h || '').match(/(\d{1,2})\s*[:hH]\s*(\d{2})?/);
   return md && mh ? new Date(+md[3], +md[2]-1, +md[1], +mh[1], +(mh[2]||0)).getTime() : 0;
 }
+var buscaTropa = '', confLote = null;
+function ordemPol(x){ return x.pres ? (x.pres.f ? 1 : 2) : 0; }   // não marcados primeiro, depois faltas, depois presentes
 function htmlTropa(r){
   var l = r.lista, ac=0, cf=0, nv=0, na=0, sc=0, pr=0, ft=0, por = {};
   l.forEach(function(x){ if (x.acessou) ac++; else na++; if (x.conf && x.conf.s==='CONFIRMADO') cf++; if (x.conf && x.conf.s==='NAO_VAI') nv++; if (x.semCiencia) sc++; if (x.pres && !x.pres.f) pr++; if (x.pres && x.pres.f) ft++; (por[x.e] = por[x.e] || []).push(x); });
@@ -467,22 +485,51 @@ function htmlTropa(r){
   if (na) alertas.push('<span class="st warn">'+na+' não acessaram</span>');
   if (nv) alertas.push('<span class="st bad">'+nv+' não poderão ir</span>');
   if (sc) alertas.push('<span class="st warn">'+sc+' sem ciência de alteração</span>');
-  return '<div class="pn"><div class="eqh"><b>'+l.length+' policiais sob seu comando</b><button class="btn sec sm" style="flex:0 0 auto" onclick="tropaCache=null;telaEscala(true);carregarTropa()">'+ic('atual')+'Atualizar</button></div>' +
-      '<div class="resumo"><div><b style="color:var(--ok)">'+pr+'</b><span>presentes</span></div><div><b style="color:var(--bad)">'+ft+'</b><span>faltas</span></div><div><b>'+cf+'</b><span>confirmaram</span></div><div><b>'+ac+'</b><span>acessaram</span></div></div>' +
+  return '<div class="pn"><div class="eqh"><b>'+l.length+' policiais sob seu comando</b><button class="btn sec sm" style="flex:0 0 auto" id="bAtTropa">'+ic('atual')+'Atualizar</button></div>' +
+      '<div class="resumo"><div><b style="color:var(--ok)">'+pr+'</b><span>presentes</span></div><div><b style="color:var(--bad)">'+ft+'</b><span>faltas</span></div><div><b>'+(l.length-pr-ft)+'</b><span>pendentes</span></div><div><b>'+cf+'</b><span>confirmaram</span></div></div>' +
       (alertas.length ? '<div class="btns" style="gap:14px">'+alertas.join('')+'</div>' : '') +
-      '<div class="muted peq" style="margin-top:10px">Na apresentação, marque Presente ou Falta para cada policial. Quem não for marcado até o horário aparece como sem registro.</div></div>' +
-    Object.keys(por).map(function(e){ var E = r.eqs[e] || {n:e, h:''}, ps = por[e], ini = inicioEquipe(r, e), passou = ini && Date.now() > ini;
-      var pe = ps.filter(function(x){ return x.pres && !x.pres.f; }).length, fe = ps.filter(function(x){ return x.pres && x.pres.f; }).length;
+      '<button class="btn full" id="bQR">'+ic('qr')+'Mostrar QR de apresentação</button>' +
+      '<div class="muted peq" style="margin-top:8px">O policial aponta a câmera do celular para o QR e a apresentação dele fica registrada. Também dá para marcar Presente ou Falta aqui na lista.</div>' +
+      '<input id="iBusca" class="busca" placeholder="Buscar por nome ou matrícula" value="'+esc(buscaTropa)+'" autocomplete="off"></div>' +
+    Object.keys(por).map(function(e){ var E = r.eqs[e] || {n:e, h:''}, ps = por[e].slice().sort(function(a,b){ return ordemPol(a)-ordemPol(b) || String(a.n).localeCompare(String(b.n)); }), ini = inicioEquipe(r, e), passou = ini && Date.now() > ini;
+      var pe = ps.filter(function(x){ return x.pres && !x.pres.f; }).length, fe = ps.filter(function(x){ return x.pres && x.pres.f; }).length, rest = ps.filter(function(x){ return !x.pres; });
+      var lote = rest.length ? (confLote === e
+          ? '<div class="btns"><button class="btn ok sm" data-lote="'+e+'" data-ok="1">Confirmar: marcar '+rest.length+' como presentes</button><button class="btn sec sm" data-lote="'+e+'" data-ok="0">Cancelar</button></div>'
+          : '<div class="btns"><button class="btn sec sm" data-lote="'+e+'">'+ic('ok')+'Marcar os '+rest.length+' restantes como presentes</button></div>') : '';
       return '<div class="pn"><div class="eqh"><b>'+esc(E.n)+'</b><span class="muted peq">'+esc(E.h||'—')+'</span></div>' +
-        '<div class="muted peq" style="margin-bottom:8px">'+pe+' de '+ps.length+' presentes'+(fe?', '+fe+' falta(s)':'')+'</div>' +
+        '<div class="muted peq" style="margin-bottom:8px">'+pe+' de '+ps.length+' presentes'+(fe?', '+fe+' falta(s)':'')+(rest.length?', '+rest.length+' sem registro':'')+'</div>' +
         ps.map(function(x){ var s = situacao(x);
-          var ap = x.pres ? '<span class="st '+(x.pres.f?'bad':'ok')+'">'+(x.pres.f?'Falta':'Presente')+' '+hm(x.pres.ts)+'</span><button class="bp des" data-pres="'+x.m+'" data-v="0">desfazer</button>'
+          var ap = x.pres ? '<span class="st '+(x.pres.f?'bad':'ok')+'">'+(x.pres.f?'Falta':'Presente')+' '+hm(x.pres.ts)+(/QR\)$/.test(x.pres.por||'')?' (QR)':'')+'</span><button class="bp des" data-pres="'+x.m+'" data-v="0">desfazer</button>'
                  : (passou ? '<span class="st warn">Sem registro</span>' : '') + '<button class="bp flt" data-pres="'+x.m+'" data-v="F">'+ic('x')+'Falta</button><button class="bp" data-pres="'+x.m+'" data-v="1">'+ic('ok')+'Presente</button>';
-          return '<div class="pol'+(x.pres?(x.pres.f?' flt':' ok'):'')+'"><div class="pi"><b>'+esc(x.n)+'</b><div class="muted">Mat. '+x.m+', '+esc(x.o)+(x.v?', '+esc(x.v):'')+(x.f!=='MEMBRO'?', '+esc(FUNC[x.f]):'')+(x.tel?'<br><a href="tel:'+x.tel+'">'+fone(x.tel)+'</a>':'')+'</div>' +
-            '<span class="st '+s[0]+'">'+esc(s[1])+'</span>'+(x.semCiencia?' <span class="st warn">sem ciência</span>':'')+'</div><div class="pa">'+ap+'</div></div>'; }).join('') +
+          return '<div class="pol'+(x.pres?(x.pres.f?' flt':' ok'):'')+'" data-busca="'+esc((x.n+' '+x.m).toLowerCase())+'"><div class="pi"><b>'+esc(x.n)+'</b><div class="muted">Mat. '+x.m+', '+esc(x.o)+(x.v?', '+esc(x.v):'')+(x.f!=='MEMBRO'?', '+esc(FUNC[x.f]):'')+(x.tel?'<br><a href="tel:'+x.tel+'">'+fone(x.tel)+'</a>':'')+'</div>' +
+            '<span class="st '+s[0]+'">'+esc(s[1])+'</span>'+(x.semCiencia?' <span class="st warn">sem ciência</span>':'')+'</div><div class="pa">'+ap+'</div></div>'; }).join('') + lote +
         '</div>'; }).join('');
 }
+function filtrarTropa(){
+  var t = buscaTropa.trim().toLowerCase();
+  document.querySelectorAll('.pol[data-busca]').forEach(function(el){ el.style.display = !t || el.dataset.busca.indexOf(t) >= 0 ? '' : 'none'; });
+}
+function redesenharTropa(){ var el = $('#tropa'); if (el && tropaCache){ el.innerHTML = htmlTropa(tropaCache); ligarPresenca(); } }
 function ligarPresenca(){
+  var bu = $('#iBusca'); if (bu){ bu.oninput = function(){ buscaTropa = bu.value; filtrarTropa(); }; filtrarTropa(); }
+  var at = $('#bAtTropa'); if (at) at.onclick = function(){ tropaCache = null; telaEscala(true); carregarTropa(); };
+  var bq = $('#bQR'); if (bq) bq.onclick = abrirQR;
+  document.querySelectorAll('[data-lote]').forEach(function(b){
+    b.onclick = function(){
+      var e = b.dataset.lote;
+      if (b.dataset.ok === '0'){ confLote = null; return redesenharTropa(); }
+      if (b.dataset.ok !== '1'){ confLote = e; return redesenharTropa(); }
+      confLote = null;
+      var s = atual, alvos = tropaCache.lista.filter(function(x){ return x.e === e && !x.pres; }).map(function(x){ return x.m; });
+      b.disabled = true; b.innerHTML = '<span class="spin"></span> Registrando';
+      api({acao:'presencaLote', ev:s.ev, mat:s.mat, tk:s.tk, alvos:alvos.join(',')}).then(function(r){
+        if (atual !== s || !tropaCache) return;
+        if (r.ok) tropaCache.lista.forEach(function(x){ if (r.pres[x.m]) x.pres = r.pres[x.m]; });
+        redesenharTropa();
+        if (!r.ok) erroFaixa('Não foi possível registrar agora. Tente de novo.');
+      });
+    };
+  });
   document.querySelectorAll('[data-pres]').forEach(function(b){
     b.onclick = function(){
       var s = atual, alvo = b.dataset.pres, v = b.dataset.v === '1', fl = b.dataset.v === 'F';
@@ -490,11 +537,91 @@ function ligarPresenca(){
       api({acao:'presenca', ev:s.ev, mat:s.mat, tk:s.tk, alvo:alvo, presente:v, falta:fl}).then(function(r){
         if (atual !== s || !tropaCache) return;
         if (r.ok) tropaCache.lista.forEach(function(x){ if (x.m === alvo) x.pres = r.pres; });
-        var el = $('#tropa'); if (el){ el.innerHTML = htmlTropa(tropaCache); ligarPresenca(); }
+        redesenharTropa();
         if (!r.ok) erroFaixa('Não foi possível registrar agora. Tente de novo.');
       });
     };
   });
+}
+
+/* ============ QR DE APRESENTAÇÃO (Cmt mostra, policial lê com a câmera) ============ */
+var APP_URL = 'https://antonielinv.github.io/escala-app/';
+var qrTimer = null, qrTropaTimer = null, qrLib = null;
+function carregarLibQR(){
+  if (window.qrcode) return Promise.resolve();
+  if (qrLib) return qrLib;
+  qrLib = new Promise(function(ok, falha){
+    var urls = ['https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js', 'https://unpkg.com/qrcode-generator@1.4.4/qrcode.js'];
+    (function tenta(i){
+      if (i >= urls.length){ qrLib = null; return falha(); }
+      var sc = document.createElement('script'); sc.src = urls[i];
+      sc.onload = function(){ window.qrcode ? ok() : tenta(i+1); }; sc.onerror = function(){ tenta(i+1); };
+      document.head.appendChild(sc);
+    })(0);
+  });
+  return qrLib;
+}
+function fecharQR(){
+  if (qrTimer){ clearInterval(qrTimer); qrTimer = null; }
+  if (qrTropaTimer){ clearInterval(qrTropaTimer); qrTropaTimer = null; }
+  var o = $('#qrTela'); if (o) o.remove();
+  redesenharTropa();
+}
+function abrirQR(){
+  var s = atual; if (!s) return;
+  var o = document.createElement('div'); o.id = 'qrTela'; o.className = 'qrtela';
+  o.innerHTML = '<div class="qrcab"><b>QR de apresentação</b><button class="btn sec sm" id="bFechaQR">'+ic('x')+'Fechar</button></div>' +
+    '<div class="qrcaixa" id="qrImg"><span class="spin"></span></div>' +
+    '<div class="qrtxt">Policiais da sua tropa: apontem a câmera do celular para este código e toquem no link que aparecer.</div>' +
+    '<div class="qrinfo" id="qrInfo">Gerando código</div>';
+  document.body.appendChild(o);
+  $('#bFechaQR').onclick = fecharQR;
+  function gerar(){
+    if (!$('#qrTela')) return;
+    Promise.all([carregarLibQR(), api({acao:'qr', ev:s.ev, mat:s.mat, tk:s.tk}, 2)]).then(function(res){
+      var r = res[1], box = $('#qrImg'); if (!box) return;
+      if (!r.ok){ $('#qrInfo').textContent = 'Não foi possível gerar o código. Verifique a internet.'; return; }
+      var q = qrcode(0, 'M'); q.addData(APP_URL + '?ev=' + encodeURIComponent(s.ev) + '&qr=' + encodeURIComponent(r.qr)); q.make();
+      box.innerHTML = q.createSvgTag({cellSize: 8, margin: 2, scalable: true});
+      $('#qrInfo').textContent = 'O código se renova sozinho a cada minuto.';
+    }, function(){ var i = $('#qrInfo'); if (i) i.textContent = 'Não foi possível carregar o gerador de QR. Verifique a internet.'; });
+  }
+  gerar(); qrTimer = setInterval(gerar, 60000);
+  qrTropaTimer = setInterval(function(){                       // acompanha quem já se apresentou
+    api({acao:'tropa', ev:s.ev, mat:s.mat, tk:s.tk}, 1).then(function(r){
+      if (!r.ok || !$('#qrTela')) return;
+      tropaCache = r;
+      var p = r.lista.filter(function(x){ return x.pres && !x.pres.f; }).length;
+      var i = $('#qrInfo'); if (i) i.innerHTML = '<b>'+p+' de '+r.lista.length+'</b> presentes. O código se renova sozinho a cada minuto.';
+    });
+  }, 15000);
+}
+
+/* ============ POLICIAL: LEU O QR DO CMT ============ */
+var qrPendente = null;
+(function(){
+  try {
+    var u = new URLSearchParams(location.search);
+    if (u.get('qr') && u.get('ev')) qrPendente = {ev: u.get('ev'), qr: u.get('qr')};
+    if (u.get('qr')) history.replaceState(null, '', location.pathname);
+  } catch(e){}
+})();
+var ERRO_QR = {QR_VENCIDO:'Este QR venceu. Peça ao seu Cmt para mostrar o código de novo e leia outra vez.',
+  QR_INVALIDO:'QR inválido. Leia o código direto da tela do seu Cmt.',
+  FORA_DA_TROPA:'Este QR é de um Cmt que não comanda você. Procure o Cmt da sua equipe.'};
+function fazerCheckin(){
+  if (!qrPendente) return false;
+  var p = qrPendente, s = M.sess.filter(function(x){ return x.ev === p.ev; })[0];
+  if (!s) return false;
+  qrPendente = null; atual = s; aba = 'ficha'; tropaCache = null; telaEscala(true);
+  var f = $('#faixa'); if (f){ f.className = 'linha'; f.innerHTML = '<span class="spin"></span> Registrando sua apresentação'; }
+  api({acao:'checkin', ev:s.ev, mat:s.mat, tk:s.tk, qr:p.qr}).then(function(r){
+    if (atual !== s) return;
+    if (r.ok){ s.dados.estado.pres = r.pres; salvar(); telaEscala(true);
+      var f = $('#faixa'); if (f){ f.className = 'linha ok'; f.innerHTML = ic('ok') + (r.ja ? 'Sua apresentação já estava registrada.' : 'Apresentação registrada às ' + hm(r.pres.ts) + '.'); } }
+    else erroFaixa(ERRO_QR[r.erro] || 'Não foi possível registrar agora. Leia o QR de novo.');
+  });
+  return true;
 }
 
 /* ============ SAIR ============ */

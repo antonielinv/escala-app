@@ -1,5 +1,5 @@
 /* Guarda a tela do app para abrir sem internet. A escala fica salva no próprio app (localStorage). */
-const VERSAO = 'escala-v1';
+const VERSAO = 'escala-v2';
 const BASE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
