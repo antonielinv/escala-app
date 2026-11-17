@@ -130,6 +130,16 @@
   .eqh b{font-family:var(--cond);font-size:18px;font-weight:600;color:var(--navy)}
 
   .busca{margin-top:12px}
+  .chk{display:flex;align-items:center;padding-right:2px} .chk input{width:22px;height:22px}
+  .barra{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--navy);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+  .barra .btn{background:#c9a227;color:var(--navy)}
+  .folha{align-items:stretch} .folha .qrcab{margin:0 auto} .form{width:100%;max-width:520px;margin:0 auto;padding-bottom:30px}
+  .opcoes{border:1px solid var(--rule);border-radius:4px}
+  .op{display:flex;gap:10px;align-items:flex-start;margin:0;padding:10px 12px;border-top:1px solid var(--rule);font-weight:500;color:var(--ink);cursor:pointer}
+  .op:first-child{border-top:0} .op input[type=radio]{width:20px;height:20px;margin-top:2px;flex-shrink:0}
+  .op:has(input:checked){background:#eef3fa}
+  .saidas{margin:10px -16px -14px;padding:10px 16px;background:#f6f7f9;border-top:1px solid var(--rule);font-size:13px;color:var(--muted)}
+  .saidas b{color:var(--ink);font-weight:600}
   .linha.ok{background:var(--okbg);color:var(--ok);padding:8px 10px;border-radius:4px;border-left:4px solid;font-weight:600}
   .qrtela{position:fixed;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;align-items:center;padding:16px;overflow:auto}
   .qrcab{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--navy);padding-bottom:10px}
@@ -174,6 +184,7 @@ var IC = {
   atual:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
   relogio:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   mais:'<path d="M12 5v14"/><path d="M5 12h14"/>',
+  troca:'<path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/>',
   qr:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>'
 };
 function ic(n){ return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'; }
@@ -342,7 +353,9 @@ function telaEscala(jaAtualizado){
   topo(d.ev.nome, p.n+', '+p.o, M.sess.length > 1 ? 'Minhas escalas' : 'Outro evento', function(){ M.sess.length > 1 ? telaMinhas() : telaEntrar(); });
   var pend = pendAlt(d), mud = {};
   pend.forEach(function(a){ (a.campos||[]).forEach(function(c){ mud[c.campo]=1; }); });
-  var alerta = pend.length ? '<div class="alerta" role="alert"><h2>'+ic('alerta')+'Sua escala foi alterada</h2><ul>' +
+  var remanejado = pend.some(function(a){ return (a.campos||[]).some(function(c){ return c.campo === 'Equipe / fração'; }); });
+  var alerta = pend.length ? '<div class="alerta" role="alert"><h2>'+ic('alerta')+(remanejado ? 'Você foi remanejado' : 'Sua escala foi alterada')+'</h2>' +
+      (remanejado ? '<div class="peq" style="margin-bottom:6px"><b>Apresente-se ao Cmt da sua nova equipe.</b> Veja abaixo o que mudou.</div>' : '') + '<ul>' +
       pend.map(function(a){ return a.tipo==='INCLUSAO' ? '<li>'+hora(a.ts)+': você foi incluído nesta escala.</li>'
         : a.campos.map(function(c){ return '<li>'+hora(a.ts)+': '+esc(c.campo)+' passou de <span class="de">'+esc(c.de)+'</span> para <span class="para">'+esc(c.para)+'</span></li>'; }).join(''); }).join('') +
       '</ul><button class="btn bad full" id="bCiente" '+(ocupado?'disabled':'')+'>Estou ciente da alteração</button></div>' : '';
@@ -377,6 +390,7 @@ function telaEscala(jaAtualizado){
     (d.cmt && aba==='tropa' ? '<div id="tropa">'+(tropaCache ? htmlTropa(tropaCache) : '<div class="pn muted"><span class="spin"></span> Carregando sua tropa</div>')+'</div>' : ficha) +
     '<button class="btn quieto full" id="bSair">'+ic('sair')+'Sair do aplicativo</button>' +
     '<div class="foot">Mantenha o app na tela inicial do celular. Ao abrir, ele mostra qualquer mudança na sua escala.</div>';
+  if (aba !== 'tropa' || !d.cmt){ var bb = $('#barraRem'); if (bb) bb.remove(); }
   desenharFaixa(jaAtualizado ? 'ok' : 'carregando');
   sino(novos.length);
   cronometro();
@@ -476,7 +490,7 @@ function inicioEquipe(r, e){
   var md = String(r.data || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/), mh = String((r.eqs[e] || {}).h || '').match(/(\d{1,2})\s*[:hH]\s*(\d{2})?/);
   return md && mh ? new Date(+md[3], +md[2]-1, +md[1], +mh[1], +(mh[2]||0)).getTime() : 0;
 }
-var buscaTropa = '', confLote = null;
+var buscaTropa = '', confLote = null, selRem = null;   // selRem: null = fora do modo seleção; objeto = matrículas marcadas
 function ordemPol(x){ return x.pres ? (x.pres.f ? 1 : 2) : 0; }   // não marcados primeiro, depois faltas, depois presentes
 function htmlTropa(r){
   var l = r.lista, ac=0, cf=0, nv=0, na=0, sc=0, pr=0, ft=0, por = {};
@@ -490,20 +504,84 @@ function htmlTropa(r){
       (alertas.length ? '<div class="btns" style="gap:14px">'+alertas.join('')+'</div>' : '') +
       '<button class="btn full" id="bQR">'+ic('qr')+'Mostrar QR de apresentação</button>' +
       '<div class="muted peq" style="margin-top:8px">O policial aponta a câmera do celular para o QR e a apresentação dele fica registrada. Também dá para marcar Presente ou Falta aqui na lista.</div>' +
+      ((r.destinos||[]).length ? (selRem ? '<div class="btns"><button class="btn sec sm" id="bSelSair">Cancelar seleção</button></div>' : '<div class="btns"><button class="btn sec sm" id="bSelRem">'+ic('troca')+'Remanejar vários</button></div>') : '') +
       '<input id="iBusca" class="busca" placeholder="Buscar por nome ou matrícula" value="'+esc(buscaTropa)+'" autocomplete="off"></div>' +
     Object.keys(por).map(function(e){ var E = r.eqs[e] || {n:e, h:''}, ps = por[e].slice().sort(function(a,b){ return ordemPol(a)-ordemPol(b) || String(a.n).localeCompare(String(b.n)); }), ini = inicioEquipe(r, e), passou = ini && Date.now() > ini;
       var pe = ps.filter(function(x){ return x.pres && !x.pres.f; }).length, fe = ps.filter(function(x){ return x.pres && x.pres.f; }).length, rest = ps.filter(function(x){ return !x.pres; });
+      var saidas = ultimosRmj(r).filter(function(m){ return m.de === e && m.para !== e; });
       var lote = rest.length ? (confLote === e
           ? '<div class="btns"><button class="btn ok sm" data-lote="'+e+'" data-ok="1">Confirmar: marcar '+rest.length+' como presentes</button><button class="btn sec sm" data-lote="'+e+'" data-ok="0">Cancelar</button></div>'
           : '<div class="btns"><button class="btn sec sm" data-lote="'+e+'">'+ic('ok')+'Marcar os '+rest.length+' restantes como presentes</button></div>') : '';
       return '<div class="pn"><div class="eqh"><b>'+esc(E.n)+'</b><span class="muted peq">'+esc(E.h||'—')+'</span></div>' +
         '<div class="muted peq" style="margin-bottom:8px">'+pe+' de '+ps.length+' presentes'+(fe?', '+fe+' falta(s)':'')+(rest.length?', '+rest.length+' sem registro':'')+'</div>' +
-        ps.map(function(x){ var s = situacao(x);
+        ps.map(function(x){ var s = situacao(x), vm = ultimoRmj(r, x.m), podeRem = (r.destinos||[]).length && x.f === 'MEMBRO';
+          var veio = vm && vm.para === x.e ? '<span class="st n">Veio da '+esc(nomeEq(r, vm.de))+' às '+hm(vm.ts)+'</span>' + (podeRem && Date.now() - vm.ts < 10*60000 && (r.destinos||[]).indexOf(vm.de) >= 0 ? ' <button class="bp des" data-desrmj="'+x.m+'">desfazer</button>' : '') + '<br>' : '';
+          var chk = selRem && podeRem ? '<label class="chk"><input type="checkbox" data-sel="'+x.m+'"'+(selRem[x.m]?' checked':'')+'></label>' : '';
           var ap = x.pres ? '<span class="st '+(x.pres.f?'bad':'ok')+'">'+(x.pres.f?'Falta':'Presente')+' '+hm(x.pres.ts)+(/QR\)$/.test(x.pres.por||'')?' (QR)':'')+'</span><button class="bp des" data-pres="'+x.m+'" data-v="0">desfazer</button>'
                  : (passou ? '<span class="st warn">Sem registro</span>' : '') + '<button class="bp flt" data-pres="'+x.m+'" data-v="F">'+ic('x')+'Falta</button><button class="bp" data-pres="'+x.m+'" data-v="1">'+ic('ok')+'Presente</button>';
-          return '<div class="pol'+(x.pres?(x.pres.f?' flt':' ok'):'')+'" data-busca="'+esc((x.n+' '+x.m).toLowerCase())+'"><div class="pi"><b>'+esc(x.n)+'</b><div class="muted">Mat. '+x.m+', '+esc(x.o)+(x.v?', '+esc(x.v):'')+(x.f!=='MEMBRO'?', '+esc(FUNC[x.f]):'')+(x.tel?'<br><a href="tel:'+x.tel+'">'+fone(x.tel)+'</a>':'')+'</div>' +
-            '<span class="st '+s[0]+'">'+esc(s[1])+'</span>'+(x.semCiencia?' <span class="st warn">sem ciência</span>':'')+'</div><div class="pa">'+ap+'</div></div>'; }).join('') + lote +
+          if (podeRem && !selRem) ap += '<button class="bp des" data-rem="'+x.m+'">remanejar</button>';
+          return '<div class="pol'+(x.pres?(x.pres.f?' flt':' ok'):'')+'" data-busca="'+esc((x.n+' '+x.m).toLowerCase())+'">'+chk+'<div class="pi"><b>'+esc(x.n)+'</b><div class="muted">Mat. '+x.m+', '+esc(x.o)+(x.v?', '+esc(x.v):'')+(x.f!=='MEMBRO'?', '+esc(FUNC[x.f]):'')+(x.tel?'<br><a href="tel:'+x.tel+'">'+fone(x.tel)+'</a>':'')+'</div>' +
+            veio + '<span class="st '+s[0]+'">'+esc(s[1])+'</span>'+(x.semCiencia?' <span class="st warn">sem ciência</span>':'')+'</div><div class="pa">'+ap+'</div></div>'; }).join('') + lote +
+        (saidas.length ? '<div class="saidas"><b>Remanejados desta equipe</b>' + saidas.map(function(m){ return '<div>'+esc(m.n)+' → '+esc(nomeEq(r, m.para))+' às '+hm(m.ts)+'</div>'; }).join('') + '</div>' : '') +
         '</div>'; }).join('');
+}
+function nomeEq(r, id){ return (r.eqs[id] || {}).n || id; }
+function ultimosRmj(r){ var u = {}; (r.rmj || []).forEach(function(m){ if (!u[m.m] || u[m.m].ts <= m.ts) u[m.m] = m; }); return Object.keys(u).map(function(k){ return u[k]; }); }
+function ultimoRmj(r, mat){ var u = null; (r.rmj || []).forEach(function(m){ if (m.m === mat && (!u || u.ts <= m.ts)) u = m; }); return u; }
+function barraSelecao(){
+  var b = $('#barraRem'); if (b) b.remove();
+  if (!selRem) return;
+  var n = Object.keys(selRem).length;
+  b = document.createElement('div'); b.id = 'barraRem'; b.className = 'barra';
+  b.innerHTML = '<span>'+n+' selecionado(s)</span><button class="btn sm" id="bRemSel" '+(n?'':'disabled')+'>'+ic('troca')+'Remanejar</button>';
+  document.body.appendChild(b);
+  $('#bRemSel').onclick = function(){ abrirRemanejar(Object.keys(selRem)); };
+}
+function abrirRemanejar(mats){
+  var r = tropaCache, s = atual; if (!r || !mats.length) return;
+  var pols = r.lista.filter(function(x){ return mats.indexOf(x.m) >= 0; });
+  var deUmaEquipe = pols.every(function(x){ return x.e === pols[0].e; }) ? pols[0].e : null;
+  var o = document.createElement('div'); o.id = 'remTela'; o.className = 'qrtela folha';
+  var cmtDe = function(id){ var c = r.lista.filter(function(x){ return x.e === id && x.f === 'CMT_EQUIPE'; })[0]; return c ? c.n : ''; };
+  o.innerHTML = '<div class="qrcab"><b>Remanejar</b><button class="btn sec sm" id="bRemFecha">'+ic('x')+'Cancelar</button></div>' +
+    '<div class="form">' +
+    '<h2 style="margin-top:14px">'+(pols.length > 1 ? pols.length+' policiais' : esc(pols[0].n))+'</h2>' +
+    '<div class="muted peq">'+pols.map(function(x){ return esc(x.n)+' ('+esc(nomeEq(r, x.e))+')'; }).join('<br>')+'</div>' +
+    '<label>Para qual equipe?</label><div class="opcoes">' +
+      r.destinos.filter(function(id){ return id !== deUmaEquipe; }).map(function(id, i){ var E = r.eqs[id] || {}; var c = cmtDe(id);
+        return '<label class="op"><input type="radio" name="dest" value="'+esc(id)+'"><span><b>'+esc(E.n || id)+'</b><br><span class="muted peq">'+(E.h ? 'Apresentação '+esc(E.h) : '')+(c ? (E.h?', ':'')+'Cmt '+esc(c) : '')+'</span></span></label>'; }).join('') +
+    '</div>' +
+    '<label>Viatura</label><div class="opcoes">' +
+      '<label class="op"><input type="radio" name="vtr" value="MANTER" checked><span>Manter a atual</span></label>' +
+      '<label class="op"><input type="radio" name="vtr" value=""><span>Sem viatura (a pé)</span></label>' +
+      '<label class="op"><input type="radio" name="vtr" value="OUTRA"><span>Outra: <input id="iVtr" maxlength="30" placeholder="Ex.: VTR 14.402" style="width:auto;padding:6px 8px;font-size:15px"></span></label>' +
+    '</div>' +
+    '<label for="iMot">Motivo (opcional)</label><input id="iMot" maxlength="40" placeholder="Ex.: reforço no portão sul">' +
+    '<div class="msg warn" id="remResumo" style="display:none"></div>' +
+    '<button class="btn full" id="bRemOk" disabled>Confirmar remanejamento</button>' +
+    '<div class="muted peq" style="margin-top:8px">O policial recebe o aviso “Você foi remanejado” com a nova equipe, local e Cmt. A presença dele continua valendo.</div>' +
+    '</div>';
+  document.body.appendChild(o);
+  function fechar(){ o.remove(); }
+  $('#bRemFecha').onclick = fechar;
+  function atualizarResumo(){
+    var d = o.querySelector('input[name=dest]:checked');
+    $('#bRemOk').disabled = !d;
+    if (d){ var z = $('#remResumo'); z.style.display = ''; z.textContent = (pols.length > 1 ? pols.length+' policiais' : pols[0].n) + ' irão para ' + nomeEq(r, d.value) + '.'; }
+  }
+  o.querySelectorAll('input[name=dest]').forEach(function(i){ i.onchange = atualizarResumo; });
+  $('#iVtr').onfocus = function(){ o.querySelector('input[name=vtr][value=OUTRA]').checked = true; };
+  $('#bRemOk').onclick = function(){
+    var d = o.querySelector('input[name=dest]:checked'); if (!d) return;
+    var vv = o.querySelector('input[name=vtr]:checked').value, vtr = vv === 'OUTRA' ? ($('#iVtr').value.trim() || 'MANTER') : vv;
+    var b = $('#bRemOk'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Remanejando';
+    api({acao:'remanejar', ev:s.ev, mat:s.mat, tk:s.tk, alvos:mats.join(','), destino:d.value, vtr:vtr, motivo:$('#iMot').value.trim()}).then(function(res){
+      if (!res.ok){ b.disabled = false; b.textContent = 'Confirmar remanejamento'; var z = $('#remResumo'); z.style.display=''; z.className='msg bad'; z.textContent = res.erro === 'NADA_A_FAZER' ? 'Nenhum policial para mover (já estão nessa equipe).' : 'Não foi possível remanejar agora. Tente de novo.'; return; }
+      fechar(); selRem = null; barraSelecao();
+      tropaCache = null; telaEscala(true); carregarTropa();
+      setTimeout(function(){ var f = $('#faixa'); if (f){ f.className = 'linha ok'; f.innerHTML = ic('ok') + res.feitos.length + ' policial(is) remanejado(s) para ' + esc(nomeEq(r, d.value)) + '.'; } }, 50);
+    });
+  };
 }
 function filtrarTropa(){
   var t = buscaTropa.trim().toLowerCase();
@@ -514,6 +592,19 @@ function ligarPresenca(){
   var bu = $('#iBusca'); if (bu){ bu.oninput = function(){ buscaTropa = bu.value; filtrarTropa(); }; filtrarTropa(); }
   var at = $('#bAtTropa'); if (at) at.onclick = function(){ tropaCache = null; telaEscala(true); carregarTropa(); };
   var bq = $('#bQR'); if (bq) bq.onclick = abrirQR;
+  var bs = $('#bSelRem'); if (bs) bs.onclick = function(){ selRem = {}; redesenharTropa(); };
+  var bx = $('#bSelSair'); if (bx) bx.onclick = function(){ selRem = null; redesenharTropa(); };
+  document.querySelectorAll('[data-sel]').forEach(function(c){ c.onchange = function(){ if (c.checked) selRem[c.dataset.sel] = 1; else delete selRem[c.dataset.sel]; barraSelecao(); }; });
+  document.querySelectorAll('[data-rem]').forEach(function(b){ b.onclick = function(){ abrirRemanejar([b.dataset.rem]); }; });
+  document.querySelectorAll('[data-desrmj]').forEach(function(b){ b.onclick = function(){
+    var m = ultimoRmj(tropaCache, b.dataset.desrmj), s = atual; if (!m) return;
+    b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+    api({acao:'remanejar', ev:s.ev, mat:s.mat, tk:s.tk, alvos:m.m, destino:m.de, vtr:m.vtr, motivo:'Desfeito'}).then(function(res){
+      tropaCache = null; telaEscala(true); carregarTropa();
+      if (!res.ok) setTimeout(function(){ erroFaixa('Não foi possível desfazer agora. Tente de novo.'); }, 50);
+    });
+  }; });
+  barraSelecao();
   document.querySelectorAll('[data-lote]').forEach(function(b){
     b.onclick = function(){
       var e = b.dataset.lote;
